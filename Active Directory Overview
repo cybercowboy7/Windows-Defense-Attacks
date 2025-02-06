@@ -1,0 +1,7 @@
+What is it:
+
+    - Distributed, heirarchical structure that allows centralized management of organization's resources, including users, computers, groups, network devices and file shares, group policies, devices, and trusts. 
+
+    - Provides authentication, accounting, and authorization functionalities
+
+    - Allows admins to manage permissions and access to network resources
