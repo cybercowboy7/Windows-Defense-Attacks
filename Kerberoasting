@@ -1,0 +1,14 @@
+Description:
+
+  - In AD, Service Principal Name (SPN) is a unique instance identifier. Kerberos uses SPNs for authentication to associate a service instance with a service logon account. This allows a client application to request that the service authenticate an account even if the client does not have the account name. When a Kerberos TGS service ticket is asked for, it gets encrypted with the service account's NTLM password hash.
+
+  - Post-exploitation attack that attempts to exploit this behavior by obtaining a ticket and performing offline password crackin to open the ticker. If the ticket opens, then the candidate password that opened the ticket is the service account's password. The success of this attack depends on the strength of the service account's password. Another factor that has some impact is the encryption algorithm used when the ticket is created, with options being:
+      - AES, RC4, DES (found in env. that are 15+ years old with legacy apps from the early 2000's otherwise this is disabled.)
+
+
+
+Attack Path:
+
+  - To obtain crackable tickets, use Rubeus https://github.com/GhostPack/Rubeus
+
+  - 
