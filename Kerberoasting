@@ -52,7 +52,24 @@ Prevention:
 
 Detection:
 
-  - 
+  - When a TGS is requested, an event log with ID 4769 is generated. However, AD also generates the same event ID whenever a user attempts to connect to a service, which          means that the volume of this event is gigantic, and relying on it alone is virtually impossible to use as a detection method\
+
+  - If we happen to be in an environment where all applications support AES and only AES tickets are generated, then it would be an excellent indicator to alert on event ID       4769
+
+  - If the ticket options is set for RC4, that is, if RC4 tickets are generated in the AD environment (which is not the default configuration), then we should alert and           follow up on it.
+
+
+
+Honeypot:
+
+  - A honeypot user is a perfect detection option to configure in an AD environment; this must be a user with no real use/need in the environment, so no service tickets are       generated regularly. In this case, any attempt to generate a service ticket for this account is likely malicious and worth inspecting. There are a few things to ensure        when using this account:
+      - The account must be a relatively old user, ideally one that has become bogus (advanced threat actors will not request tickets for new accounts because they likely             have strong passwords and the possibility of being a honeypot user).
+
+      - The password should not have been changed recently. A good target is 2+ years, ideally five or more. But the password must be strong enough that the threat agents             cannot crack it.
+
+      - The account must have some privileges assigned to it; otherwise, obtaining a ticket for it won't be of interest (assuming that an advanced adversary obtains tickets           only for interesting accounts/higher likelihood of cracking, e.g., due to an old password).
+
+      - The account must have an SPN registered, which appears legit. IIS and SQL accounts are good options because they are prevalent.
 
 
 
