@@ -1,0 +1,61 @@
+Description:
+
+  - Similar to kerberoasting where we can obtain crackable hashes for user accounts that have the property 'Do not require Kerberos preauthentication'.
+
+  - Success of attack depends on the strength of the user account password that we will crack.
+
+
+Attack:
+
+  - Utilize Rubeus 
+    .\Rubeus.exe asreproast /outfile:asrep.txt
+
+  - Obtains the hashes and puts them in asrep.txt
+
+  - Extract that file to the Kali VM
+
+  - Append 23$ to after $krb5asrep in order to make it known to hashcat that this hash is a kerberos 5 AS-REP          etype 23
+
+  - sudo hashcat -m 18200 -a 0 asrep.txt passwords.txt --outfile asrepcrack.txt --force
+
+
+Prevention:
+
+  - Only enable 'Do not require Kerberos preauthentication' if you need it
+
+  - Review accounts quarterly to ensure that this porperty is being used properly.
+
+  - Assign a separate password policy for users requiring this configuration
+
+  - Ensure passwords have a good password strength policy to adhere to.
+
+
+Detection:
+
+  - Generates a 4768 Event ID signaling a Kerberos Authentication Ticket was generated
+
+  - Caveat is that AD generates this 4768 with all users that authenticate using kerberos
+
+  - Try to possibly find the location of authentication and correlate it to known good logins
+
+
+Honeypot:
+
+  - Honeypot user is a good detection option to configure in AD environments
+    - Must be a user with no real use/need in the environment, such that no login attempts are performed regularly
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
