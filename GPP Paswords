@@ -1,3 +1,66 @@
 Description:
 
-  - 
+  - SYSVOL is a network share on all DCs, containing logon scripts, group policy data, and other required domain-       wide data
+
+  - AD stores all group policies in \\<DOMAIN>\SYSVOL\<DOMAIN>\Policies
+
+  - GPP (Group Policy Preferences) introduced the ability to store and use credentials in several scenarios, all        which AD stores in the policies directory in SYSVOL.
+
+  - Encryption Key that AD uses to encrypt the XML policiy files:                                                      Publised here https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-gppref/2c15cbf0-                    f086-4c74-8b70-1f2fa45dd4be?redirectedfrom=MSDN
+    - 4e 99 06 e8  fc b6 6c c9  fa f4 93 10  62 0f fe e8
+      f4 96 e8 06  cc 05 79 90  20 9b 09 a4  33 b6 6c 1b
+
+
+
+Attack:
+
+  - Get-GPPPassword function from PowerSploit, automatically parses all XML files in the policies folder in            SYSVOL, picking up those with the cpassword property and decrypting them once detected.
+
+        Import-Module .\Get-GPPPassword.ps1
+        Get-GPPPassword
+
+
+Prevention:
+
+  - Once the encryption key was made public and started getting abused, patch KB2962486 was released by microsoft      to prevent caching credentials in GPP
+
+  - AD environments still contain credentials in SYSVOL regardless of the patch in some environments. 
+
+  - If AD environment was built before 2014, it is likely that its credentials are still cached because the patch      does not clear existing stored cretentials (only prevents the caching of new ones)
+
+
+Detection:
+
+  - Accessing the XML file containing the credentials should be a red flag if we are auditing file access; this is     more realistic (due to volume otherwise) regarding detection if it is a dummy XML file, not associated with        any GPO. In this case, there will be no reason for anyone to touch this file, and any attempt is likely            suspicious. As demonstrated by Get-GPPPasswords, it parses all of the XML files in the Policies folder. For        auditing, we can generate an event whenever a user reads the file
+    
+  - Access to the file will generate Event ID 4663
+
+  - Logon attempts (failed or successful, depending on whether the password is up to date) of the user whose           credentials are exposed is another way of detecting the abuse of this attack; this should generate one of the      events 4624 (successful logon), 4625 (failed logon), or 4768 (TGT requested).
+
+
+
+Honeypot:
+
+  - Use a semi-privileged user with a wrong password.
+
+  - Service accounts provide more realistic opportunity because:
+    - The password is usually expected to be old, without recent or regular modifications.
+    - It is easy to ensure that the last password change is older than when the GPP XML file was last modified.          If the user's password is changed after the file was modified, then no adversary will attempt to login with        this account (the password is likely no longer valid).
+    - Schedule the user to perform any dummy task to ensure that there are recent logon attempts.
+
+  - When we do the above, we can configure an alert that if any successful or failed logon attempts occur with        this service account, it must be malicious (assuming that we whitelist the dummy task logon that simulates the     logon activity in the alert).
+
+  - Event IDs: 4625, 4771, 4776
+
+
+
+
+
+
+
+
+
+
+
+
+
