@@ -1,0 +1,7 @@
+Description:
+
+  - Kerberos Delegation enables an application to access resources on a different server; for example, instead of giving the service account running the web server access
+    to the database directly, we can allow the account the be delegated to the SQL server service.
+
+  - Once a user logs into the website, the web server service account will request to the SQL server service on behalf of the user, allowing the user to get access
+    to the content in the database that they've been provisioned to without having to assign any access to the web server service account itself.
